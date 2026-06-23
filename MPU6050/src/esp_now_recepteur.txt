@@ -1,0 +1,175 @@
+// recepteur ESP32, receiving the mpu6050 data send by 1st ESP32 via ESP-NOW
+
+#include <WiFi.h> //ajout pour la partie espnow
+#include <Wire.h> // cLibrary for I2C communication
+#include <esp_now.h>
+#include <esp_wifi.h> //ajout pour la partie espnow
+
+// Mac Adresse de l'ESP32 lié au MPU6050 (0x indique que le nbr est en
+// hexadécimal)
+uint8_t broadcastAddress[] = {0x64, 0xe8, 0x33, 0x7c, 0x1e, 0x14};
+
+// Mac Adresse du 2ème ESP32
+// uint8_t broadcastAddress[] = {0xf4, 0x12, 0xfa, 0xCB, 0x20, 0xDC};
+
+// Define variables to store incoming readings
+float incomingAccelX, incomingAccelY, incomingAccelZ;
+float incomingGyroX, incomingGyroY, incomingGyroZ;
+
+// Structure example to send data
+// Must match the receiver structure
+typedef struct struct_message {
+  float accelX;
+  float accelY;
+  float accelZ;
+  float gyroX;
+  float gyroY;
+  float gyroZ;
+} struct_message;
+
+// Create a struct_message to hold incoming sensor readings
+struct_message incomingReadings;
+
+// struct défini par Espressif qui contient toutes les infos du module avec
+// lequel on souhaite communiquer
+// soit la MacAdresse(array), le canal (int) et l'encription (bool)
+esp_now_peer_info_t peerInfo;
+
+// Variable to store if sending data was successful
+bool transmissionStatus = false;
+
+void printTransmissionStatus(bool success) {
+  if (success) {
+    Serial.println("Delivery Success :)");
+  } else {
+    Serial.println("Delivery Fail :(");
+  }
+}
+
+// Callback when data is sent. l'ESP32 fourni l'adresse MAC du module avec
+// lequel il a communiqué et le status de la transmission (mac_dress, status)
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("\r\nLast Packet Send Status:\t");
+  transmissionStatus = (status == ESP_NOW_SEND_SUCCESS);
+  printTransmissionStatus(transmissionStatus);
+}
+
+// Callback when data is received
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
+  memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
+  Serial.print("Bytes received: ");
+  Serial.println(len);
+}
+
+void storeReceivedData() {
+  incomingAccelX = incomingReadings.accelX;
+  incomingAccelY = incomingReadings.accelY;
+  incomingAccelZ = incomingReadings.accelZ;
+  incomingGyroX = incomingReadings.gyroX;
+  incomingGyroY = incomingReadings.gyroY;
+  incomingGyroZ = incomingReadings.gyroZ;
+}
+
+void printReceivedData() {
+  Serial.print("Received AccelX: ");
+  Serial.print(incomingAccelX);
+  Serial.print(", AccelY: ");
+  Serial.print(incomingAccelY);
+  Serial.print(", AccelZ: ");
+  Serial.print(incomingAccelZ);
+  Serial.println(" m/s^2");
+
+  Serial.print("Received GyroX: ");
+  Serial.print(incomingGyroX);
+  Serial.print(", GyroY: ");
+  Serial.print(incomingGyroY);
+  Serial.print(", GyroZ: ");
+  Serial.print(incomingGyroZ);
+  Serial.println(" rad/s");
+}
+
+// Function to read the MAC address of the ESP32 and print it to Serial
+// Monitor void readMacAddress() {
+//  uint8_t baseMac[6];
+//  esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, baseMac);
+//  if (ret == ESP_OK) {
+//    Serial.printf("%02x:%02x:%02x:%02x:%02x:%02x\n", baseMac[0], baseMac[1],
+//                  baseMac[2], baseMac[3], baseMac[4], baseMac[5]);
+//  } else {
+//    Serial.println("Failed to read MAC address");
+//  }
+//}
+
+// --------------------------------------SETUP---------------------------------------
+void setup(void) {
+  Serial.begin(115200);
+
+  // active l'antenne WiFi de l'ESP32 pour pouvoir utiliser ESP-NOW
+  WiFi.mode(WIFI_STA);
+
+  // Init ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // la fonction esp_now_register_send_cb "lie" la fonction OnDataSent à la
+  // fonction esp_now_send. Après l'execution de esp_now_send (dans loop),
+  // OnDataSent sera appelé
+  esp_now_register_send_cb(OnDataSent);
+
+  // Register peer
+  // On remplit la struct peerInfo avec les infos du module avec lequel on
+  // souhaite communiquer
+  // memcpy(destination, source, taille) est une fonction qui copie les
+  // données de source vers destination. Ici, on
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+
+  // Add peer
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add peer");
+    return;
+  }
+
+  // Register for a callback function that will be called when data is
+  // received
+  esp_now_register_recv_cb(OnDataRecv);
+
+  // saute une ligne pour plus de lisibilité dans le moniteur série
+  Serial.println("");
+
+  // debounce time
+  delay(100);
+}
+
+// --------------------------------------LOOP---------------------------------------
+void loop() {
+
+  // uncomment to see the MAC address of the ESP32
+  // Serial.print("[DEFAULT] ESP32 Board MAC Address: ");
+  // readMacAddress();
+
+  // Send message via ESP-NOW
+  // esp_err_t result = esp_now_send(broadcastAddress, (uint8_t
+  // *)&ESP32Readings,
+  //                                sizeof(ESP32Readings));
+
+  // if (result == ESP_OK) {
+  //   Serial.println("Sent with success");
+  // } else {
+  //   Serial.println("Error sending the data");
+  // }
+
+  // store received data in variables
+  storeReceivedData();
+  // print received data on the monitor
+  printReceivedData();
+
+  delay(500);
+}
+
+// En gros certaines fonctions sont définies dans les bibliothèques que nous
+// avons importées c'est pour ça qu'on a pas du les définir et qu'elles
+// semblent sorir de nulle part. la

@@ -1,0 +1,14 @@
+tension: 20v. Ne pas dépasser 21v.
+alimentation: 3-5s, c'est à dire 3 à 5 batterie lipo en série. les tensions s'aditionnent avec 5*3.7 on arrive à 18.5v.
+
+utiliser un module simpleFoc pour controler l'alimentation électrique du moteur. Tout faire soit même prendrait un temps fou pour un resultat imparfait. De plus on utilisera des batterie (Direct Current) alors que le moteur a besoin de courant alternatif. le module fera la conversion	
+
+référence: https://manuals.plus/asin/B0GKFHDTCD section 4.1
+
+Q&R
+
+Ce n'est pas un stepper motor, le courant ne va pas magnétiser un coil puis un autre mais pas sur le moteur gimball? Si, mais pas de manière binaire, c'est un moteur triphasé, les coils sont alimentés selon une intensité qui varie car il nécessite du courant alternatif.
+
+comment nomme t'on le moteur opposé au moteur stepper ? brushless
+
+est-ce possible d'utiliser le mu6050 pour connaitre la position du moteur. 
