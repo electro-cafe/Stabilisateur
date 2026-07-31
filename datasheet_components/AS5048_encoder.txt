@@ -1,0 +1,12 @@
+Several AS5048 ICs can be connected in the daisy chain for serial data read out. The absolute position information of the magnet is directly accessible over a PWM output and can be read out over a standard SPI or a high-speed IC interface
+
+Simple programmable zero position via SPI or IC command
+
+14-bit full scale resolution
+
+3.3V / 5V compliant
+
+PWM: (sur le 1er encoder commandé. a vérifier sur les autres)
+noir = GND
+rouge = VCC
+blanc = PWM

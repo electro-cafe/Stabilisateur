@@ -234,7 +234,21 @@ void loop() {
   }
   delay(kUpdateDelay);
 
-  /* Print out the values for Debug */
+  // teleplot graph
+  Serial.print(">accelX: ");
+  Serial.println(MPU6050Readings.accelX);
+  Serial.print(">accelY: ");
+  Serial.println(MPU6050Readings.accelY);
+  Serial.print(">accelZ: ");
+  Serial.println(MPU6050Readings.accelZ);
+  Serial.print(">gyroX: ");
+  Serial.println(MPU6050Readings.gyroX);
+  Serial.print(">gyroY: ");
+  Serial.println(MPU6050Readings.gyroY);
+  Serial.print(">gyroZ: ");
+  Serial.println(MPU6050Readings.gyroZ);
+
+  /* Print out the values for Debug in serial monitor */
   // Serial.print("Acceleration X: ");
   // Serial.print(a.acceleration.x);
   // Serial.print(", Y: ");
@@ -257,5 +271,41 @@ void loop() {
   //
   // Serial.println("");
 
-  delay(500);
+  delay(kUpdateDelay); // Delay a little bit to improve simulation performance
 }
+
+// les senseur gyro / accel transmettent les valeurs brutes dans le range des
+// défini gyro accel et bandwidth. Mais les 'accéléromètre, précis à long terme
+// est perturbé par le gyro et le gyro précis a court terme a une dérive à long
+// terme. On va appliquer la fusion de capteurs pour combiner les deux et
+// obtenir une mesure plus précise.
+//  on a le choix entre différents filtres. Les voici par ordre de difficulté:
+
+//  Filtre complémentaire
+
+// Filtre de Kalman. Méthode mathématique qui permet de combiner les
+// mesures de plusieurs capteurs pour obtenir une estimation plus précise de
+// l'état d'un système. Il prend en compte les incertitudes des mesures et des
+// modèles pour produire une estimation optimale.
+
+//  DMP (Digital Motion Processor)
+
+// l'accelerometre corrige la dérive naturelle du gyroscope. Malheureusement,
+// comme la gravité est constante, l'accelerometre ne détecte que très mal les
+// rotations sur yaw (rotations sur soi même). imaginons un fil lesté par un
+// poid, tendu sous le composant. lorsqu'on l'incline sur l'axe X ou Y, l'angle
+// que forme le fil rapport au capteur change. Mais si on fait tourner le
+// capteur sur lui même, l'angle reste 90 degrés. comme l'accéléromètre ne
+// détecthe pas de changement il ne peut pas corriger la dérive du gyroscope.
+
+// La solution est d'utiliser un capteur magnétique (HMC5883L) qui détecte le
+// champ magnétique terrestre. Ainsi, on peut combiner les mesures de
+// l'accelerometre, du gyroscope et du capteur magnétique pour obtenir une
+// mesure plus précise de l'orientation du capteur. Cette technique s'appelle la
+// fusion de capteurs (sensor fusion). On utilisera l'algorithme de Madgwick
+// pour effectuer cette fusion.l'angle que forme le n'est pas mesurable.
+
+HMC5883L lit le champ magnétique terestre et permet de corriger la dérive du
+    gyroscope.combiner le HMC5883L avec le MPU6050 s'appelle sensor fusion. 
+
+    On utilisera Madgwick

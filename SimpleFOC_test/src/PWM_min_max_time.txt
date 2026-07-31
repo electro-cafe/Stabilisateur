@@ -1,0 +1,46 @@
+#include <SimpleFOC.h>
+
+const int PWM_PIN = 2;
+
+MagneticSensorPWM sensor = MagneticSensorPWM(PWM_PIN, 3, 952);
+void IRAM_ATTR doPWM() { sensor.handlePWM(); }
+
+// On crée nos propres variables dans le main pour trouver le Min et le Max
+unsigned long min_us = 999999;
+unsigned long max_us = 0;
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000); // Laisse le temps au port série de l'ESP32 de s'initialiser
+
+  sensor.init();
+  sensor.enableInterrupt(doPWM);
+
+  Serial.println("Tourne l'axe du moteur à la main sur un tour complet...");
+}
+
+void loop() {
+  sensor.update();
+
+  // On lit la durée brute actuelle du signal PWM (en microsecondes)
+  unsigned long duration = sensor.pulse_length_us;
+
+  // On met à jour le Min et le Max dans nos variables locales
+  if (duration > 0) {
+    if (duration < min_us)
+      min_us = duration;
+    if (duration > max_us)
+      max_us = duration;
+  }
+
+  Serial.print("Actuel : ");
+  Serial.print(duration);
+  Serial.print(" us | Min : ");
+  Serial.print(min_us);
+  Serial.print(" us | Max : ");
+  Serial.print(max_us);
+  Serial.print(" us | Angle : ");
+  Serial.println(sensor.getMechanicalAngle());
+
+  delay(150);
+}

@@ -1,0 +1,2 @@
+Datasheet 
+https://docs.simplefoc.com/mini_v1_connect_hardware

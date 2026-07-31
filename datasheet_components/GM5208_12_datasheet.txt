@@ -31,6 +31,7 @@ Load volts: 20V
 Load torque(g·cm): 1800-2500
 
 Motor internal resistance: 15.2Ω±5%（Resistance varies with temperature）
+// resistance entre 2 phase, il faut diviser cette valeur par 2 si le moteur est cablé en étoile ce qui est souvent le cas. Si il est en Delta il faut multiplier par 1.5 pour connaître la resistance du moteur.
 
 High voltage test: DC500V 10mA @1sec
 
@@ -49,3 +50,6 @@ Maximum power: ≤40W
 Working Voltage: 3-5S
 
 Working temperature: -20~60℃;10~90%RH
+
+achetable avec l'encodeur AS5048A
+résolution: 14 bits = 16 384 positions

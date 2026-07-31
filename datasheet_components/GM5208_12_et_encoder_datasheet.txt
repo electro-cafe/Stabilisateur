@@ -1,0 +1,55 @@
+Model: GM5208
+
+Motor Out Diameter: Ф63±0.05mm
+
+Configuration: 12N/14P // a priori 14P -> 14 poles donc 7 paires de poles
+
+Motor Height: 22.7±0.2mm 
+
+Hollow Shaft(OD): Ф15-0.008/-0.012 mm
+
+Hollow Shaft(ID): Ф12+0.05/0 mm
+
+Wire Length: 610±3mm
+
+Cable AWG: #24
+
+Motor Weight: 195±0.5g
+
+Wire plug: 2.5mm dupont connector
+
+No-load current: 0.09±0.1 A
+
+No-load volts: 20V
+
+No-load Rpm: 456~504 RPM
+
+Load current: 1A
+
+Load volts: 20V
+
+Load torque(g·cm): 1800-2500
+
+Motor internal resistance: 15.2Ω±5%（Resistance varies with temperature）
+// resistance entre 2 phase, il faut diviser cette valeur par 2 si le moteur est cablé en étoile ce qui est souvent le cas. Si il est en Delta il faut multiplier par 1.5 pour connaître la resistance du moteur.
+
+High voltage test: DC500V 10mA @1sec
+
+Rotor housing runout: ≤0.1mm
+
+Steering (axle extension): clockwise
+
+High-low temperature test:
+
+High temperature: Keep at 60℃ for 100 hours, and the motor can work normally after 24 hours at room temperature
+
+Low temperature: Keep at -20℃ for 100 hours, and the motor can work normally after 24 hours at room temperature
+
+Maximum power: ≤40W
+
+Working Voltage: 3-5S
+
+Working temperature: -20~60℃;10~90%RH
+
+achetable avec l'encodeur AS5048A
+resolution: 14 bit = 16384

@@ -9,6 +9,8 @@ Q&R
 
 Ce n'est pas un stepper motor, le courant ne va pas magnétiser un coil puis un autre mais pas sur le moteur gimball? Si, mais pas de manière binaire, c'est un moteur triphasé, les coils sont alimentés selon une intensité qui varie car il nécessite du courant alternatif.
 
+Si il indique 0.09 ampère c'est lorsqu'il tourne, l'ampérage nécessaire est plus haut lorsqu'il démarre
+
 comment nomme t'on le moteur opposé au moteur stepper ? brushless
 
 est-ce possible d'utiliser le mu6050 pour connaitre la position du moteur. 

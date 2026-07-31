@@ -1,0 +1,40 @@
+0. [annulé ? ] Commenter exemples 
+	→ Voltage control 
+
+1. [annulé ? ] Faire tourner le moteur seul en open_loop_velocity
+       → vérifier que le hardware fonctionne (câblage, PWM, SimpleFOCmini)
+       
+       → AVANT de toucher au DMP ou PID
+
+2. [annulé ? ] Faire tourner le moteur en voltage_mode
+       → comprendre motor.move(x) qui sera ta commande finale
+
+
+0. [ ] acheter le simpleFOC Shield V2 où V3
+
+1. [ ] souder les ponts sous la carde simpleFOc Shield
+       
+2. [ ] mesurer et renseigner le code close loop (customisé vu qu'on utilise pas d'encoder) avec 
+	voltage max du moteur
+	résistance du moteur
+	
+
+3. [ ] Intégrer le DMP ElectronicCats sur MPU-6050
+       → library: ElectronicCats/mpu6050
+
+4. [ ] Faire tourner le MPU-6050 DMP seul
+       → vérifier angles propres dans Teleplot
+       → valider pitch/roll stables avant de toucher au moteur
+
+5. [ ] Écrire ton PID externe
+       → structure simple : Kp, Ki, Kd, erreur, intégrale, dt
+       → prendre en compte la Force contre electromotrice ou c'est simple FOC qui gère
+
+6. [ ] Brancher PID → motor.move()
+       → Ki=0, Kd=0 pour commencer
+
+7. [ ] Tuner Kp jusqu'à oscillation
+
+8. [ ] Ajouter Kd pour amortir
+
+9. [ ] Ajouter Ki en dernier (très petit)

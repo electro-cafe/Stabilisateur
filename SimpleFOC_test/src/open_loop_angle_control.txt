@@ -1,0 +1,135 @@
+#include <Arduino.h>
+// Open loop motor control example
+// Open loop = pas de capteur d'encodage de position, on ne sait pas où est le
+// moteur, on lui dit juste de tourner à une certaine vitesse ou d'aller à une
+// certaine position. moins précis et consomme plus de batterie.
+// en close loop un capteur mesure et corrige en continue la position du moteur.
+#include <SimpleFOC.h>
+
+// BLDC motor & driver instance
+// BLDCMotor motor = BLDCMotor(pole pair number); //l'argument représente le
+// nombre de paires de pôles du rotor, soit le nombre d'aimant visible / 2
+BLDCMotor motor = BLDCMotor(11);
+// BLDCDriver3PWM driver = BLDCDriver3PWM(pwmA, pwmB, pwmC, Enable(optional));
+// correspond aux pins IN2 / IN2 / IN3du microcontroleur qui vont envoyer le
+// signal PWM au driver. Le driver va ensuite envoyer la tension requise sur les
+// cables liés aux moteur. La 4ème pin est optionnelle, elle permet d'activer ou
+// désactiver le driver, donc le moteur. Utile à des fins d'économie d'énergie
+// si on a un mode veille par ex.
+BLDCDriver3PWM driver = BLDCDriver3PWM(9, 5, 6, 8);
+
+// Stepper motor & driver instance
+// StepperMotor motor = StepperMotor(50);
+// StepperDriver4PWM driver = StepperDriver4PWM(9, 5, 10, 6,  8);
+
+// target variable
+// la position que l'on veut que le moteur atteigne, en radiant.
+// 1 tour complet = 2*PI rad
+float target_position = 0;
+
+// instantiate the commander
+// en gros c'est un objet qui va nous permettre de communiquer avec le moteur
+// via le terminal. Dans setup on va définir des lettres qui seront reconnues et
+// permettront de changer des variables du moteur. ex T20
+// Commander command -> création d'un objet de type comander;
+// commander(Serial) -> constructeur de l'objet, on lui passe en paramètre
+// Serial. ça veux dire qu'on peut utiliser le terminal pour communiquer
+Commander command = Commander(Serial);
+// cmd stock ce qu'on écrit dans le terminal et .scalar va transformer le string
+// en float et le stocker dans target_position
+void doTarget(char *cmd) { command.scalar(&target_position, cmd); }
+void doLimit(char *cmd) { command.scalar(&motor.voltage_limit, cmd); }
+void doVelocity(char *cmd) { command.scalar(&motor.velocity_limit, cmd); }
+
+void setup() {
+
+  // driver config
+  // power supply voltage [V]
+
+  // comme le driver utilise le pwm pour faire varier la tension, il faut lui
+  // dire quelle est la tension qu'il reçoit afin qu'il puisse le temps de
+  // hachage pour obtenir la tension de sortie souhaitée. ex si on veut 10V en
+  // sortie et que le driver reçoit 20V, il faut un rapport de 0.5, donc le pwm
+  // sera à 50% de son temps de hachage.
+  driver.voltage_power_supply = 20;
+  // limit the maximal dc voltage the driver can set
+  // as a protection measure for the low-resistance motors
+  // this value is fixed on startup
+  driver.voltage_limit = 20;
+  // cette fonction va initialiser le driver, c'est obligatoire de l'appeler
+  // avant de pouvoir utiliser le driver
+  driver.init();
+  // link the motor and the driver
+  motor.linkDriver(&driver);
+
+  // limiting motor movements
+  // limit the voltage to be set to the motor
+  // start very low for high resistance motors to avoid high currents and
+  // overheating
+  // current = resistance*voltage, so try to be well under 1Amp
+  // ça aurait été plus simple de mettre la limite d'ampérage, mais le simple
+  // FOC Mini n'a pas de capteur de courant, donc on ne peut pas.
+  // en mode close loop, l'ampérage est estimé grâce au capteur de position, la
+  // vitesse de rotation du moteur et la force contre électromotrice.
+  motor.voltage_limit = 3; // [V]
+  // limit/set the velocity of the transition in between
+  // target angles
+  // cette valeur n'est pas donnée par le fabriquant, c'est à nous de la fine
+  // tuner.
+  motor.velocity_limit = 5; // [rad/s] un tour complet = 2*PI rad
+  // open loop control config
+  motor.controller = MotionControlType::angle_openloop;
+
+  // init motor hardware
+  motor.init();
+
+  //  On est dans le set up. command.add dit  command.run d'appeler la
+  //  fonction
+  //  doTarget quand il voit T dans le terminal ('T' = lettre de déclanchement,
+  //  doTarget =fonction qui met à jour la variable, "target angle" = text
+  //  indicatif pour renseigner l'utilisateur lors de l'utilisation de la
+  //  command help ou automatiquement lorsque la variable target angle est
+  //  modifiée. Du code non présent ici va récupérer ce text et l'afficher dans
+  //  le terminal avec la nouvelle valeur.))
+  // position cible en radiant-
+  command.add('T', doTarget, "target angle");
+  // torque. plus la valeur est grande plus le moteur a de
+  // force, consomme d'énergie et chauffe
+  command.add('L', doLimit, "voltage limit");
+  // corrigé, le code de base indiquait doLimit au lieu de doVelocity.
+  // vitesse de rotation du champ magnétique. change la fréquence d'alternance
+  // des phases u v w. Ne change pas directement le voltage et la consommation
+  // electrique. mais plus le champ magnétique tourne vite plus il génère de
+  // force contre électromotrice et il a moins d'emprise sur le rotor donc il
+  // faut augmenter le voltage pour compenser.
+  command.add('V', doVelocity, "movement velocity");
+
+  Serial.begin(115200);
+  Serial.println("Motor ready!");
+  Serial.println(
+      "Set target position [rad]"); // message indiquant à l'utilisateur comment
+                                    // communiquer avec le moteur en radiant
+  _delay(1000);
+}
+
+void loop() {
+  // open  loop angle movements
+  // using motor.voltage_limit and motor.velocity_limit
+  // angles can be positive or negative, negative angles correspond to opposite
+  // motor direction
+  // actionne le moteur pour qu'il se déplace vers la position target_position,
+  // en utilisant la vitesse et la tension.
+  motor.move(target_position);
+
+  // user communication
+  // regarde si l'utilisateur a envoyé un message via le terminal commençant par
+  // les lettres de déclanchement, si oui, il va le décoder et changer les
+  // variables du moteur en conséquence
+  command.run();
+}
+
+// tester encoder avec ce code:
+// https://docs.simplefoc.com/test_sensor.
+
+// encoder PWM. a combiner avec angle control.lino
+// https://docs.simplefoc.com/test_sensor

@@ -2,7 +2,10 @@
 #include <cmath> // pour utiliser la fonction pow() si nécessaire
 #include <iostream>
 
-// Pin connected to the hw 504 joystick
+// la valeur neutre du joysticke devrait etre 2048 mais dans les faits, après
+// mesure, on a 3000. on a donc 25% de définition pour l'axe positif et 75% pour
+// l'axe négatif.
+//  Pin connected to the hw 504 joystick
 const int JoystickX = 4;
 const int JoystickY = 5;
 const int JoystickButton = 13;
@@ -51,9 +54,16 @@ void readJoystick(int x, int y, int z) {
   joystickValueX = (analogRead(x) - zeroedjoystickX) >> interval << interval;
   joystickValueY = (analogRead(y) - zeroedjoystickY) >> interval << interval;
   joystickButtonState = digitalRead(z);
+  // affiche les valeurs dans teleplot sous forme de graph
+  Serial.print(">joystickX:");
   Serial.println(joystickValueX);
+  Serial.print(">joystickY:");
   Serial.println(joystickValueY);
-  Serial.println(joystickButtonState);
+
+  // affiche les valeurs dans le moniteur série
+  // Serial.println(joystickValueX);
+  // Serial.println(joystickValueY);
+  // Serial.println(joystickButtonState);
 }
 
 int testInterval() {
@@ -64,8 +74,11 @@ int testInterval() {
     int divider = static_cast<int>(pow(2, interval));
 
     if (i % divider == 0) {
-      std::cout << "Original: " << i << " -> Filtre: " << valueScaled
-                << std::endl;
+      Serial.print(">original:");
+      Serial.println(i);
+      Serial.print(">filtre:");
+      Serial.println(valueScaled);
+      delay(100); // Ajout d'un délai pour éviter de saturer le moniteur série
     }
   }
   return 0;
@@ -73,8 +86,10 @@ int testInterval() {
 
 void loop() {
 
-  testInterval();
+  // test de l'intervalle de filtrage
+  // testInterval();
+
   // Reading joystick value
-  // readJoystick(JoystickX, JoystickY, JoystickButton);
-  // delay(500);
+  readJoystick(JoystickX, JoystickY, JoystickButton);
+  delay(50);
 }
