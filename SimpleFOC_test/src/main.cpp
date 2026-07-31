@@ -2,7 +2,7 @@
  *
  * Position/angle motion control example
  * Steps:
- * 1) Configure the motor and encoder
+ * 1) Configure the motor and sensor (encoder)
  * 2) Run the code
  * 3) Set the target angle (in radians) from serial terminal
  *
@@ -39,7 +39,7 @@
 
 // création d'un objet moteur à partir de la classe BLDCMotor. L'argument
 // représente le nombre de paires de pôles du rotor. comme on est sur du 12N14P
-// ça fait 7 paires
+// pour 12 aimants et 14 bobines on a 7 paires de pôles. ça fait 7 paires
 BLDCMotor motor = BLDCMotor(7);
 // le 4ème argument du driver représente la pin enable. C'est elle qui allume /
 // éteind le driver, donc le moteur. Elle ne contrôle pas le PWM, ça c'est les 3
@@ -57,15 +57,10 @@ BLDCDriver3PWM driver = BLDCDriver3PWM(9, 5, 6, 8);
 // StepperMotor motor = StepperMotor(50);
 // StepperDriver4PWM driver = StepperDriver4PWM(9, 5, 10, 6,  8);
 
-// encoder instance
-// j'ai remplacé celui du code de base par celui du fichier MagneticSensorPWM.h
-//(pinPWM, min microseconds, max microseconds)
-MagneticSensorPWM encoder = MagneticSensorPWM(2, 3, 952);
-
-// Interrupt routine intialisation for callback function
-// le pwm de l'encodeur est un signal qui change d'état à chaque mouvement du
-// moteur pour indiquer sa position
-void doPWM() { encoder.handlePWM(); }
+// senseur (encoder) instance
+// arguments: chip select pin= pin dédiée au sensor, bit resolution, angle
+// register= adresse de stockage de l'angle
+MagneticSensorSPI sensor = MagneticSensorSPI(2, 14, 0x3FFF);
 
 // angle set point variable
 float target_angle = 0;
@@ -79,16 +74,10 @@ void doTarget(char *cmd) { command.scalar(&target_angle, cmd); }
 void setup() {
 
   // initialize encoder sensor hardware
-  encoder.init();
-  encoder.enableInterrupt(doPWM);
-  // en réalité doA et doB sont des pointeurs vers les fonctions
-  // handleA et handleB de l'encoder. Quand on écrit le nom d'une
-  // fonction sans les parenthèse on obtient un pointeur vers
-  // cette fonction. Quand on écrit le nom d'une fonction avec
-  // les parenthèse on exécute la fonction et on obtient le
-  // résultat de cette fonction.
-  // link the motor to the sensor
-  motor.linkSensor(&encoder);
+  // eventuellement ajouter SPI.begin() et #include <SPI.h> si le code ne
+  // compile pas
+  sensor.init();
+  motor.linkSensor(&sensor);
 
   // driver config
   // power supply voltage [V]
@@ -139,6 +128,7 @@ void setup() {
   motor.useMonitoring(Serial);
 
   // initialize motor
+
   motor.init();
   // align encoder and start FOC
   motor.initFOC();
@@ -179,3 +169,18 @@ void loop() {
 
 // encoder PWM. a combiner avec angle control.lino
 // https://docs.simplefoc.com/test_sensor
+
+//----------acces aux variables du moteur-------------------
+// motor.shaft_angle; // motor angle
+// motor.shaft_velocity; // motor velocity
+//------------- acces aux variables du sensor---------------
+// sensor.getAngle(); // motor angle
+// sensor.getVelocity(); // motor velocity
+//----------acces variable moteur SPI----------------------
+// class MagneticSensorSPI{
+// public:
+//    // shaft velocity getter
+//   float getVelocity();
+// 	// shaft angle getter
+//   float getAngle();
+//}
