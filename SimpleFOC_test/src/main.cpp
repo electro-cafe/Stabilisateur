@@ -60,7 +60,7 @@ BLDCDriver3PWM driver = BLDCDriver3PWM(9, 5, 6, 8);
 // senseur (encoder) instance
 // arguments: chip select pin= pin dédiée au sensor, bit resolution, angle
 // register= adresse de stockage de l'angle
-MagneticSensorSPI sensor = MagneticSensorSPI(2, 14, 0x3FFF);
+MagneticSensorSPI sensor = MagneticSensorSPI(5, 14, 0x3FFF);
 
 // angle set point variable
 float target_angle = 0;
