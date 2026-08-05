@@ -26,7 +26,14 @@
  *
  */
 #include <Arduino.h>
+#include <SPI.h>
 #include <SimpleFOC.h>
+
+// défini quelles pin de l'esp sont dédiées au SPI.
+#define MY_CS 10
+#define MY_SCK 11
+#define MY_MOSI 12
+#define MY_MISO 13
 
 // quand on parle d'interuption on fait référence à une pin qui, lorsqu'elle
 // change d'état, va interrompre le programme en cours pour exécuter une
@@ -60,7 +67,7 @@ BLDCDriver3PWM driver = BLDCDriver3PWM(9, 5, 6, 8);
 // senseur (encoder) instance
 // arguments: chip select pin= pin dédiée au sensor, bit resolution, angle
 // register= adresse de stockage de l'angle
-MagneticSensorSPI sensor = MagneticSensorSPI(5, 14, 0x3FFF);
+MagneticSensorSPI sensor = MagneticSensorSPI(MY_CS, 14, 0x3FFF);
 
 // angle set point variable
 float target_angle = 0;
@@ -71,12 +78,17 @@ void doTarget(char *cmd) { command.scalar(&target_angle, cmd); }
 // copie de la valeur de cette variable. Ainsi, la fonction scalar peut modifier
 // directement la valeur de target_angle dans le programme principal.
 
+// fonction callback du moteur
+void onMotor(char *cmd) { command.motor(&motor, cmd); }
+
 void setup() {
 
   // initialize encoder sensor hardware
-  // eventuellement ajouter SPI.begin() et #include <SPI.h> si le code ne
-  // compile pas
-  sensor.init();
+  // indique à l'esp32 quels pins sont dediées au SPI.
+  // ça permet de ne pas utiliser les pins par défaut du SPI
+  SPI.begin(MY_SCK, MY_MISO, MY_MOSI, MY_CS);
+  sensor.init(&SPI);
+
   motor.linkSensor(&sensor);
 
   // driver config
@@ -99,8 +111,8 @@ void setup() {
   // default parameters in defaults.h
 
   // velocity PI controller parameters
-  motor.PID_velocity.P = 0.2f;
-  motor.PID_velocity.I = 2;
+  motor.PID_velocity.P = 2;
+  motor.PID_velocity.I = 0;
   motor.PID_velocity.D = 0;
   // default voltage_power_supply
   motor.voltage_limit = 15; // afin de pas dépasser les 1 ampères. en prenant 15
@@ -114,13 +126,13 @@ void setup() {
 
   // angle P controller
   // P du système PID (eh oui il y en a 2) défini à quel point le moteur corrige
-  // sa position lue via l'encoder comparée à sa position target. Plus la valeur
+  // sa position lu via l'encoder comparée à sa position target. Plus la valeur
   // est grande, plus le moteur va corriger rapidement sa position, mais plus il
   // risque de vibrer et de surchauffer. Il faut trouver un compromis entre
   // rapidité et stabilité.
   motor.P_angle.P = 2; // a augmenter suivant la charge a déplacer.
   //  maximal velocity of the position control
-  motor.velocity_limit = 4;
+  motor.velocity_limit = 8;
 
   // use monitoring with serial
   Serial.begin(115200);
@@ -135,6 +147,13 @@ void setup() {
 
   // add target command T
   command.add('T', doTarget, "target angle");
+  // add motor command M
+  command.add('M', onMotor, "Motor");
+
+  // Choisir les variables à afficher (le _MON signifie monitor): Target
+  // (consigne) et Shaft Angle (position réelle)
+  // motor.monitor_variables = _MON_TARGET | _MON_ANGLE;
+  // motor.monitor_downsample = 300; // high number to avoid flooding debug
 
   Serial.println(F("Motor ready."));
   Serial.println(F("Set the target angle using serial terminal:"));
@@ -154,12 +173,30 @@ void loop() {
   // You can also use motor.move() and set the motor.target in the code
   motor.move(target_angle);
 
+  // affiche les variables du moteur définie dans setup
+  // (motor.monitor_variables)
+  // motor.monitor();
+
   // function intended to be used with serial plotter to monitor motor variables
   // significantly slowing the execution down!!!!
   // motor.monitor();
 
   // user communication
   command.run();
+  // Met à jour la lecture du capteur
+  sensor.update();
+
+  // graphe teleplot
+  // Serial.print(">currentPosition:");
+  // angle read from the sensor converted to degrees
+  // Serial.println(sensor.getAngle() * 180.0 / _PI);
+
+  // debug: Affichage de l'angle en radians et en degrés
+  // Serial.print("Angle (rad): ");
+  // Serial.print(sensor.getAngle());
+  // Serial.print("\t Angle (deg): ");
+  // Serial.println(sensor.getAngle() * 180.0 / _PI);
+  // delay(100); // Pause de 100ms pour rendre la lecture lisible
 }
 
 //-- -- -- -- -- -- -- -- --
