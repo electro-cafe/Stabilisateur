@@ -183,8 +183,10 @@ void loop() {
 
   // user communication
   command.run();
+
+  // a priori source d'erreur
   // Met à jour la lecture du capteur
-  sensor.update();
+  // sensor.update();
 
   // graphe teleplot
   // Serial.print(">currentPosition:");
