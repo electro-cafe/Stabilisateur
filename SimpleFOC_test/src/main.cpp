@@ -111,9 +111,9 @@ void setup() {
   // default parameters in defaults.h
 
   // velocity PI controller parameters
-  motor.PID_velocity.P = 2;
-  motor.PID_velocity.I = 0;
-  motor.PID_velocity.D = 0;
+  motor.PID_velocity.P = 0.2; //     ---2ème étape à FINE TUNER en mode velocity
+  motor.PID_velocity.I = 0; //       ---2ème étape à FINE TUNER
+  motor.PID_velocity.D = 0; //       ---2ème étape à FINE TUNER
   // default voltage_power_supply
   motor.voltage_limit = 15; // afin de pas dépasser les 1 ampères. en prenant 15
                             // ohm comme resistance du moteur.
@@ -121,8 +121,11 @@ void setup() {
   // default value is 300 volts per sec  ~ 0.3V per millisecond
   motor.PID_velocity.output_ramp = 1000;
 
-  // velocity low pass filtering time constant
-  motor.LPF_velocity.Tf = 0.01f;
+  // velocity low pass filtering noise. faible valeur = moins de filtrage,
+  // laisse passer plus de bruit. grande valeur = moins de
+  // bruit mais moins de réactivité.
+  motor.LPF_velocity.Tf =
+      0.01f; //                       ---2ème étape à FINE TUNER
 
   // angle P controller
   // P du système PID (eh oui il y en a 2) défini à quel point le moteur corrige
@@ -130,9 +133,11 @@ void setup() {
   // est grande, plus le moteur va corriger rapidement sa position, mais plus il
   // risque de vibrer et de surchauffer. Il faut trouver un compromis entre
   // rapidité et stabilité.
-  motor.P_angle.P = 2; // a augmenter suivant la charge a déplacer.
+  // a augmenter suivant la charge a déplacer
+  motor.P_angle.P = 2; //    ---3ème  étape à FINE TUNER en mode target
+
   //  maximal velocity of the position control
-  motor.velocity_limit = 8;
+  motor.velocity_limit = 4; //    ---1er étape a FINE TUNER en mode velocity
 
   // use monitoring with serial
   Serial.begin(115200);
@@ -151,9 +156,9 @@ void setup() {
   command.add('M', onMotor, "Motor");
 
   // Choisir les variables à afficher (le _MON signifie monitor): Target
-  // (consigne) et Shaft Angle (position réelle)
-  // motor.monitor_variables = _MON_TARGET | _MON_ANGLE;
-  // motor.monitor_downsample = 300; // high number to avoid flooding debug
+  // (position demandée) et Shaft Angle (position réelle)
+  motor.monitor_variables = _MON_TARGET | _MON_ANGLE;
+  motor.monitor_downsample = 300; // high number to avoid flooding debug
 
   Serial.println(F("Motor ready."));
   Serial.println(F("Set the target angle using serial terminal:"));
@@ -173,20 +178,12 @@ void loop() {
   // You can also use motor.move() and set the motor.target in the code
   motor.move(target_angle);
 
-  // affiche les variables du moteur définie dans setup
-  // (motor.monitor_variables)
-  // motor.monitor();
+  // affiche les variables
+  motor
+      .monitor_variables // définie dans setup motor.monitor();
 
-  // function intended to be used with serial plotter to monitor motor variables
-  // significantly slowing the execution down!!!!
-  // motor.monitor();
-
-  // user communication
-  command.run();
-
-  // a priori source d'erreur
-  // Met à jour la lecture du capteur
-  // sensor.update();
+          // user communication
+          command.run();
 
   // graphe teleplot
   // Serial.print(">currentPosition:");
